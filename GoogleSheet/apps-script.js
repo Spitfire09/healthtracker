@@ -132,13 +132,14 @@ function doGet(e) {
           if (!row[5]) return;
           const parts = String(row[2] || '').split(',').map(s => s.trim()).filter(Boolean);
           const partsText = parts.join(', ');
+          const note = row[4] || '';
           entries.push({
-            id: row[6] || 'pain:' + row[5] + ':' + partsText + ':' + row[3] + ':' + row[4],
+            id: row[6] || 'pain:' + row[5] + ':' + partsText + ':' + row[3] + ':' + note,
             type: 'pain',
             timestamp: row[5],
             parts: parts,
             intensity: Number(row[3]) || 0,
-            note: row[4] || '',
+            note: note,
             synced: true
           });
         });
@@ -150,13 +151,14 @@ function doGet(e) {
           if (!row[5]) return;
           const symptoms = String(row[2] || '').split(',').map(s => s.trim()).filter(Boolean);
           const symptomsText = symptoms.join(', ');
+          const note = row[4] || '';
           entries.push({
-            id: row[6] || 'sick:' + row[5] + ':' + symptomsText + ':' + row[3] + ':' + row[4],
+            id: row[6] || 'sick:' + row[5] + ':' + symptomsText + ':' + row[3] + ':' + note,
             type: 'sick',
             timestamp: row[5],
             symptoms: symptoms,
             intensity: Number(row[3]) || 0,
-            note: row[4] || '',
+            note: note,
             synced: true
           });
         });

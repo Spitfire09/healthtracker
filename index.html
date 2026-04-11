@@ -739,7 +739,7 @@ function normalizeEntry(entry) {
 
 function mergeEntries(localEntries, remoteEntries) {
   const map = new Map();
-  [...remoteEntries, ...localEntries].forEach(raw => {
+  [...localEntries, ...remoteEntries].forEach(raw => {
     const entry = normalizeEntry(raw);
     const existing = map.get(entry.id);
     if (!existing) {
