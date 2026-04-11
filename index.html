@@ -706,7 +706,10 @@ const DEVICE_KEY = 'healthlog_device_id';
 function getDeviceId() {
   let id = localStorage.getItem(DEVICE_KEY);
   if (!id) {
-    id = 'dev-' + Math.random().toString(36).slice(2, 10);
+    const entropy = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+    id = 'dev-' + entropy;
     localStorage.setItem(DEVICE_KEY, id);
   }
   return id;
@@ -732,13 +735,12 @@ function mergeEntries(localEntries, remoteEntries) {
   const map = new Map();
   [...remoteEntries, ...localEntries].forEach(raw => {
     const entry = normalizeEntry(raw);
-    const key = entry.id || fallbackEntryId(entry);
-    const existing = map.get(key);
+    const existing = map.get(entry.id);
     if (!existing) {
-      map.set(key, entry);
+      map.set(entry.id, entry);
       return;
     }
-    map.set(key, { ...existing, ...entry, synced: existing.synced || entry.synced });
+    map.set(entry.id, { ...existing, ...entry, synced: existing.synced || entry.synced });
   });
   return Array.from(map.values()).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 }
