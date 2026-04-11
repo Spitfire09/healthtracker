@@ -701,9 +701,56 @@ let currentFilter = 'all';
 
 const DB_KEY = 'healthlog_entries';
 const SET_KEY = 'healthlog_settings';
+const DEVICE_KEY = 'healthlog_device_id';
+
+function getDeviceId() {
+  let id = localStorage.getItem(DEVICE_KEY);
+  if (!id) {
+    id = 'dev-' + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem(DEVICE_KEY, id);
+  }
+  return id;
+}
+
+function generateEntryId() {
+  return `${getDeviceId()}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function fallbackEntryId(entry) {
+  const listField = entry.type === 'pain' ? (entry.parts || []).join(',') : (entry.symptoms || []).join(',');
+  return `${entry.type}:${entry.timestamp}:${listField}:${entry.intensity}:${entry.note || ''}`;
+}
+
+function normalizeEntry(entry) {
+  const normalized = { ...entry };
+  normalized.id = String(normalized.id || fallbackEntryId(normalized));
+  normalized.synced = normalized.synced === true;
+  return normalized;
+}
+
+function mergeEntries(localEntries, remoteEntries) {
+  const map = new Map();
+  [...remoteEntries, ...localEntries].forEach(raw => {
+    const entry = normalizeEntry(raw);
+    const key = entry.id || fallbackEntryId(entry);
+    const existing = map.get(key);
+    if (!existing) {
+      map.set(key, entry);
+      return;
+    }
+    map.set(key, { ...existing, ...entry, synced: existing.synced || entry.synced });
+  });
+  return Array.from(map.values()).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+}
 
 function getEntries() {
-  try { return JSON.parse(localStorage.getItem(DB_KEY) || '[]'); } catch { return []; }
+  try {
+    const entries = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+    if (!Array.isArray(entries)) return [];
+    return entries.map(normalizeEntry);
+  } catch {
+    return [];
+  }
 }
 function saveEntries(arr) {
   localStorage.setItem(DB_KEY, JSON.stringify(arr));
@@ -796,7 +843,7 @@ document.getElementById('save-pain').addEventListener('click', () => {
   if (selectedPain === null) return toast('Vælg en smerteintensitet', true);
 
   const entry = {
-    id: Date.now(),
+    id: generateEntryId(),
     type: 'pain',
     timestamp: new Date().toISOString(),
     parts: [...selectedParts],
@@ -822,7 +869,7 @@ document.getElementById('save-sick').addEventListener('click', () => {
   if (selectedSick === null) return toast('Vælg en alvorlighedsgrad', true);
 
   const entry = {
-    id: Date.now(),
+    id: generateEntryId(),
     type: 'sick',
     timestamp: new Date().toISOString(),
     symptoms: [...selectedSymptoms],
@@ -1033,6 +1080,7 @@ async function trySync(newEntries) {
       const payload = {
         secret: s.secretKey || '',
         timestamp: entry.timestamp,
+        entryId: entry.id,
         type: entry.type,
         location: entry.type === 'pain' ? entry.parts.join(', ') : '',
         symptoms: entry.type === 'sick' ? entry.symptoms.join(', ') : '',
@@ -1055,13 +1103,49 @@ async function trySync(newEntries) {
   }
 }
 
+async function pullFromSheet() {
+  const s = getSettings();
+  if (!s.sheetUrl) return 0;
+  try {
+    const url = new URL(s.sheetUrl);
+    url.searchParams.set('action', 'list');
+    if (s.secretKey) url.searchParams.set('secret', s.secretKey);
+
+    const res = await fetch(url.toString());
+    if (!res.ok) throw new Error('Kunne ikke hente data fra arket');
+    const payload = await res.json();
+    if (!payload || payload.status !== 'ok' || !Array.isArray(payload.entries)) return 0;
+
+    const localEntries = getEntries();
+    const mergedEntries = mergeEntries(localEntries, payload.entries.map(e => ({ ...e, synced: true })));
+    const added = Math.max(0, mergedEntries.length - localEntries.length);
+    if (JSON.stringify(mergedEntries) !== JSON.stringify(localEntries)) {
+      saveEntries(mergedEntries);
+    }
+
+    return added;
+  } catch (err) {
+    console.warn('Læsning fra ark fejlede:', err);
+    return 0;
+  }
+}
+
 document.getElementById('sync-btn').addEventListener('click', async () => {
+  const syncBtn = document.getElementById('sync-btn');
   const unsynced = getEntries().filter(e => !e.synced);
-  if (!unsynced.length) return toast('Intet nyt at synkronisere');
-  document.getElementById('sync-btn').textContent = '↻ Synkroniserer…';
+  syncBtn.textContent = '↻ Synkroniserer…';
   await trySync(unsynced);
-  document.getElementById('sync-btn').innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.71"/></svg> Synkroniser`;
-  toast('✓ Synkroniseret');
+  const pulledCount = await pullFromSheet();
+  syncBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.71"/></svg> Synkroniser`;
+  if (!unsynced.length && pulledCount === 0) {
+    toast('Intet nyt at synkronisere');
+  } else if (pulledCount > 0) {
+    toast(`✓ Synkroniseret (${pulledCount} nye fra arket)`);
+  } else {
+    toast('✓ Synkroniseret');
+  }
+  renderHistory();
+  renderStats();
 });
 
 // ══════════════════════════════════════════
@@ -1078,6 +1162,12 @@ function toast(msg, isError = false) {
 // INIT
 // ══════════════════════════════════════════
 loadSettings();
+pullFromSheet().then(added => {
+  if (added > 0) {
+    renderHistory();
+    renderStats();
+  }
+});
 
 // Service Worker registration
 if ('serviceWorker' in navigator) {
