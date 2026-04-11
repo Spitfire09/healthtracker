@@ -218,6 +218,7 @@
       transition: all .15s;
       display: flex; align-items: center; justify-content: center;
     }
+    .pain-dot[data-v="0"].sel { border-color: var(--muted); background: rgba(164,176,190,.2); color: var(--muted); }
     .pain-dot[data-v="1"].sel { border-color: #6bc49a; background: rgba(107,196,154,.2); color: #6bc49a; }
     .pain-dot[data-v="2"].sel { border-color: #b6c44a; background: rgba(182,196,74,.2); color: #b6c44a; }
     .pain-dot[data-v="3"].sel { border-color: var(--accent3); background: rgba(240,160,64,.2); color: var(--accent3); }
@@ -332,6 +333,7 @@
       border-radius: 50px;
       margin-left: auto;
     }
+    .pain-0 { background: rgba(164,176,190,.15); color: var(--muted); }
     .pain-1 { background: rgba(107,196,154,.15); color: #6bc49a; }
     .pain-2 { background: rgba(182,196,74,.15); color: #b6c44a; }
     .pain-3 { background: rgba(240,160,64,.15); color: var(--accent3); }
@@ -553,8 +555,9 @@
           <button class="part-btn" data-part="Hoved">🧠 Hoved</button>
         </div>
 
-        <div class="pain-label">Smerteintensitet (1 = lidt · 5 = voldsomt)</div>
+        <div class="pain-label">Smerteintensitet (0 = ingen · 5 = voldsomt)</div>
         <div class="pain-scale" id="pain-scale">
+          <button class="pain-dot" data-v="0">0</button>
           <button class="pain-dot" data-v="1">1</button>
           <button class="pain-dot" data-v="2">2</button>
           <button class="pain-dot" data-v="3">3</button>
@@ -587,8 +590,9 @@
           <button class="symptom-btn" data-s="Muskelsmerter">💪 Muskelsmerter</button>
         </div>
 
-        <div class="pain-label">Alvorlighedsgrad (1 = mild · 5 = alvorlig)</div>
+        <div class="pain-label">Alvorlighedsgrad (0 = ingen · 5 = alvorlig)</div>
         <div class="pain-scale" id="sick-scale">
+          <button class="pain-dot" data-v="0">0</button>
           <button class="pain-dot" data-v="1">1</button>
           <button class="pain-dot" data-v="2">2</button>
           <button class="pain-dot" data-v="3">3</button>
@@ -690,9 +694,9 @@
 // ══════════════════════════════════════════
 let currentType = 'pain';
 let selectedParts = [];
-let selectedPain = 0;
+let selectedPain = null;
 let selectedSymptoms = [];
-let selectedSick = 0;
+let selectedSick = null;
 let currentFilter = 'all';
 
 const DB_KEY = 'healthlog_entries';
@@ -789,7 +793,7 @@ document.getElementById('sick-symptoms').addEventListener('click', e => {
 // ══════════════════════════════════════════
 document.getElementById('save-pain').addEventListener('click', () => {
   if (!selectedParts.length) return toast('Vælg mindst ét smerteområde', true);
-  if (!selectedPain) return toast('Vælg en smerteintensitet', true);
+  if (selectedPain === null) return toast('Vælg en smerteintensitet', true);
 
   const entry = {
     id: Date.now(),
@@ -815,7 +819,7 @@ document.getElementById('save-pain').addEventListener('click', () => {
 // ══════════════════════════════════════════
 document.getElementById('save-sick').addEventListener('click', () => {
   if (!selectedSymptoms.length) return toast('Vælg mindst ét symptom', true);
-  if (!selectedSick) return toast('Vælg en alvorlighedsgrad', true);
+  if (selectedSick === null) return toast('Vælg en alvorlighedsgrad', true);
 
   const entry = {
     id: Date.now(),
@@ -838,14 +842,14 @@ document.getElementById('save-sick').addEventListener('click', () => {
 
 function resetPainForm() {
   selectedParts = [];
-  selectedPain = 0;
+  selectedPain = null;
   document.querySelectorAll('.part-btn').forEach(b => b.classList.remove('selected'));
   document.querySelectorAll('#pain-scale .pain-dot').forEach(b => b.classList.remove('sel'));
   document.getElementById('pain-note').value = '';
 }
 function resetSickForm() {
   selectedSymptoms = [];
-  selectedSick = 0;
+  selectedSick = null;
   document.querySelectorAll('.symptom-btn').forEach(b => b.classList.remove('selected'));
   document.querySelectorAll('#sick-scale .pain-dot').forEach(b => b.classList.remove('sel'));
   document.getElementById('sick-note').value = '';
