@@ -130,11 +130,13 @@ function doGet(e) {
         const rows = painSheet.getRange(2, 1, painSheet.getLastRow() - 1, 7).getValues();
         rows.forEach(row => {
           if (!row[5]) return;
+          const parts = String(row[2] || '').split(',').map(s => s.trim()).filter(Boolean);
+          const partsText = parts.join(', ');
           entries.push({
-            id: row[6] || 'pain:' + row[5] + ':' + row[2] + ':' + row[3] + ':' + row[4],
+            id: row[6] || 'pain:' + row[5] + ':' + partsText + ':' + row[3] + ':' + row[4],
             type: 'pain',
             timestamp: row[5],
-            parts: String(row[2] || '').split(',').map(s => s.trim()).filter(Boolean),
+            parts: parts,
             intensity: Number(row[3]) || 0,
             note: row[4] || '',
             synced: true
@@ -146,11 +148,13 @@ function doGet(e) {
         const rows = sickSheet.getRange(2, 1, sickSheet.getLastRow() - 1, 7).getValues();
         rows.forEach(row => {
           if (!row[5]) return;
+          const symptoms = String(row[2] || '').split(',').map(s => s.trim()).filter(Boolean);
+          const symptomsText = symptoms.join(', ');
           entries.push({
-            id: row[6] || 'sick:' + row[5] + ':' + row[2] + ':' + row[3] + ':' + row[4],
+            id: row[6] || 'sick:' + row[5] + ':' + symptomsText + ':' + row[3] + ':' + row[4],
             type: 'sick',
             timestamp: row[5],
-            symptoms: String(row[2] || '').split(',').map(s => s.trim()).filter(Boolean),
+            symptoms: symptoms,
             intensity: Number(row[3]) || 0,
             note: row[4] || '',
             synced: true

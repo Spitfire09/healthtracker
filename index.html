@@ -719,8 +719,14 @@ function generateEntryId() {
   return `${getDeviceId()}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function normalizeList(values) {
+  return (values || []).map(v => String(v).trim()).filter(Boolean).join(', ');
+}
+
 function fallbackEntryId(entry) {
-  const listField = entry.type === 'pain' ? (entry.parts || []).join(',') : (entry.symptoms || []).join(',');
+  const listField = entry.type === 'pain'
+    ? normalizeList(entry.parts || [])
+    : normalizeList(entry.symptoms || []);
   return `${entry.type}:${entry.timestamp}:${listField}:${entry.intensity}:${entry.note || ''}`;
 }
 
@@ -743,6 +749,31 @@ function mergeEntries(localEntries, remoteEntries) {
     map.set(entry.id, { ...existing, ...entry, synced: existing.synced || entry.synced });
   });
   return Array.from(map.values()).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+}
+
+function entriesEqual(a, b) {
+  if (!a || !b) return false;
+  const aList = a.type === 'pain' ? normalizeList(a.parts || []) : normalizeList(a.symptoms || []);
+  const bList = b.type === 'pain' ? normalizeList(b.parts || []) : normalizeList(b.symptoms || []);
+  return (
+    a.id === b.id &&
+    a.type === b.type &&
+    a.timestamp === b.timestamp &&
+    a.intensity === b.intensity &&
+    (a.note || '') === (b.note || '') &&
+    a.synced === b.synced &&
+    aList === bList
+  );
+}
+
+function hasEntriesChanged(localEntries, mergedEntries) {
+  if (localEntries.length !== mergedEntries.length) return true;
+  const localMap = new Map(localEntries.map(e => [e.id, e]));
+  for (const merged of mergedEntries) {
+    const local = localMap.get(merged.id);
+    if (!entriesEqual(local, merged)) return true;
+  }
+  return false;
 }
 
 function getEntries() {
@@ -1120,8 +1151,9 @@ async function pullFromSheet() {
 
     const localEntries = getEntries();
     const mergedEntries = mergeEntries(localEntries, payload.entries.map(e => ({ ...e, synced: true })));
-    const added = Math.max(0, mergedEntries.length - localEntries.length);
-    if (JSON.stringify(mergedEntries) !== JSON.stringify(localEntries)) {
+    const localIds = new Set(localEntries.map(e => e.id));
+    const added = mergedEntries.filter(e => !localIds.has(e.id)).length;
+    if (hasEntriesChanged(localEntries, mergedEntries)) {
       saveEntries(mergedEntries);
     }
 
