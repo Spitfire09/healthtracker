@@ -652,10 +652,12 @@
           <div class="settings-label">Hemmelig nøgle (valgfrit)</div>
           <div class="settings-sub">Ekstra sikkerhed — skal matche din Apps Script</div>
         </div>
-        <input type="text" id="secret-key" placeholder="f.eks. mit-hemmelige-token-123" />
+        <input type="password" id="secret-key" placeholder="f.eks. mit-hemmelige-token-123" />
       </div>
 
       <button class="save-btn" id="save-settings" style="background:var(--surface2);color:var(--accent);border:1.5px solid var(--accent);">GEM INDSTILLINGER</button>
+      <button class="save-btn" id="validate-access" style="background:var(--surface2);color:var(--accent3);border:1.5px solid var(--accent3);margin-top:10px;">VALIDER ADGANG TIL GOOGLE SHEET</button>
+      <div id="validate-status" style="display:none;margin-top:10px;padding:10px 14px;border-radius:8px;font-size:0.85rem;"></div>
     </div>
 
     <div class="card" style="margin-top:16px">
@@ -1093,6 +1095,55 @@ document.getElementById('save-settings').addEventListener('click', () => {
   };
   localStorage.setItem(SET_KEY, JSON.stringify(s));
   toast('✓ Indstillinger gemt');
+});
+
+document.getElementById('validate-access').addEventListener('click', async () => {
+  const btn = document.getElementById('validate-access');
+  const statusEl = document.getElementById('validate-status');
+  const s = getSettings();
+
+  if (!s.sheetUrl) {
+    statusEl.style.display = 'block';
+    statusEl.style.background = 'rgba(224,92,92,0.15)';
+    statusEl.style.border = '1px solid var(--accent2)';
+    statusEl.style.color = 'var(--accent2)';
+    statusEl.textContent = '⚠ Ingen Apps Script URL er angivet. Gem dine indstillinger først.';
+    return;
+  }
+
+  btn.textContent = 'VALIDERER…';
+  btn.disabled = true;
+  statusEl.style.display = 'none';
+
+  try {
+    let url;
+    try { url = new URL(s.sheetUrl); } catch { throw new Error('Ugyldig URL-format — tjek at adressen er korrekt.'); }
+    url.searchParams.set('action', 'list');
+    if (s.secretKey) url.searchParams.set('secret', s.secretKey);
+
+    const res = await fetch(url.toString());
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    if (data && data.status === 'ok') {
+      statusEl.style.display = 'block';
+      statusEl.style.background = 'rgba(62,207,207,0.1)';
+      statusEl.style.border = '1px solid var(--accent)';
+      statusEl.style.color = 'var(--accent)';
+      statusEl.textContent = '✓ Forbindelsen til Google Sheet fungerer korrekt.';
+    } else {
+      throw new Error('Uventet svar fra script');
+    }
+  } catch (err) {
+    statusEl.style.display = 'block';
+    statusEl.style.background = 'rgba(224,92,92,0.15)';
+    statusEl.style.border = '1px solid var(--accent2)';
+    statusEl.style.color = 'var(--accent2)';
+    statusEl.textContent = `✗ Ingen adgang: ${err.message}. Tjek at URL og hemmelig nøgle er korrekte, og at scriptet er deployed korrekt.`;
+  } finally {
+    btn.textContent = 'VALIDER ADGANG TIL GOOGLE SHEET';
+    btn.disabled = false;
+  }
 });
 
 document.getElementById('clear-btn').addEventListener('click', () => {
