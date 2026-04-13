@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f1923" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="Helbreds- og smertelogger" />
+  <title>Helbredlog</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #0b1218;
+      --surface:   #121d27;
+      --surface2:  #1a2a38;
+      --border:    #1f3044;
+      --accent:    #3ecfcf;
+      --accent2:   #e05c5c;
+      --accent3:   #f0a040;
+      --text:      #e8f0f7;
+      --muted:     #6a8aa8;
+      --r:         14px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* ── HEADER ── */
+    header {
+      padding: 20px 20px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.4rem;
+      letter-spacing: -0.5px;
+      color: var(--accent);
+    }
+    .logo span { color: var(--text); }
+    #sync-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 6px 14px;
+      border-radius: 50px;
+      font-size: 0.78rem;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #sync-btn:hover { border-color: var(--accent); color: var(--accent); }
+    #sync-btn svg { width: 14px; height: 14px; }
+
+    /* ── TABS ── */
+    nav {
+      display: flex;
+      gap: 4px;
+      padding: 16px 20px 0;
+    }
+    nav button {
+      flex: 1;
+      padding: 10px 6px;
+      border: none;
+      border-radius: var(--r) var(--r) 0 0;
+      background: var(--surface2);
+      color: var(--muted);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    nav button.active {
+      background: var(--surface);
+      color: var(--accent);
+      border-bottom: 2px solid var(--accent);
+    }
+
+    /* ── MAIN ── */
+    main {
+      flex: 1;
+      background: var(--surface);
+      border-radius: 0 0 0 0;
+      padding: 24px 20px 100px;
+      overflow-y: auto;
+    }
+
+    .tab { display: none; }
+    .tab.active { display: block; }
+
+    /* ── SECTION TITLE ── */
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* ── QUICK LOG CARD ── */
+    .card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title .icon {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+    .icon-red   { background: rgba(224,92,92,.15); }
+    .icon-teal  { background: rgba(62,207,207,.12); }
+    .icon-amber { background: rgba(240,160,64,.12); }
+
+    /* ── TYPE TOGGLE ── */
+    .type-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .type-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all .18s;
+    }
+    .type-btn.active-sick  { border-color: var(--accent2); color: var(--accent2); background: rgba(224,92,92,.08); }
+    .type-btn.active-pain  { border-color: var(--accent3); color: var(--accent3); background: rgba(240,160,64,.08); }
+
+    /* ── BODY MAP ── */
+    .body-parts {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .part-btn {
+      padding: 10px 6px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all .15s;
+      text-align: center;
+    }
+    .part-btn.selected {
+      border-color: var(--accent3);
+      color: var(--accent3);
+      background: rgba(240,160,64,.08);
+    }
+
+    /* ── PAIN SCALE ── */
+    .pain-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .pain-scale {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .pain-dot {
+      flex: 1;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: transparent;
+      cursor: pointer;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--muted);
+      transition: all .15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pain-dot[data-v="0"].sel { border-color: var(--muted); background: rgba(164,176,190,.2); color: var(--muted); }
+    .pain-dot[data-v="1"].sel { border-color: #6bc49a; background: rgba(107,196,154,.2); color: #6bc49a; }
+    .pain-dot[data-v="2"].sel { border-color: #b6c44a; background: rgba(182,196,74,.2); color: #b6c44a; }
+    .pain-dot[data-v="3"].sel { border-color: var(--accent3); background: rgba(240,160,64,.2); color: var(--accent3); }
+    .pain-dot[data-v="4"].sel { border-color: #e07a3c; background: rgba(224,122,60,.2); color: #e07a3c; }
+    .pain-dot[data-v="5"].sel { border-color: var(--accent2); background: rgba(224,92,92,.2); color: var(--accent2); }
+
+    /* ── NOTE INPUT ── */
+    textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.88rem;
+      padding: 12px;
+      resize: none;
+      height: 80px;
+      margin-bottom: 16px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    textarea:focus { border-color: var(--accent); }
+    textarea::placeholder { color: var(--muted); }
+
+    /* ── SAVE BUTTON ── */
+    .save-btn {
+      width: 100%;
+      padding: 15px;
+      border-radius: var(--r);
+      border: none;
+      background: var(--accent);
+      color: #0b1218;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 0.95rem;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .save-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .save-btn:active { transform: translateY(0); }
+    .save-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+    /* ── SICK LOG ── */
+    #sick-section { margin-bottom: 16px; }
+    .sick-symptoms {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .symptom-btn {
+      padding: 8px 14px;
+      border-radius: 50px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .symptom-btn.selected {
+      border-color: var(--accent2);
+      color: var(--accent2);
+      background: rgba(224,92,92,.08);
+    }
+
+    /* ── HISTORY LIST ── */
+    .history-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      animation: fadeIn .3s ease;
+    }
+    @keyframes fadeIn { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform:none; } }
+    .history-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .history-body { flex: 1; }
+    .history-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.92rem;
+      margin-bottom: 3px;
+    }
+    .history-meta {
+      font-size: 0.78rem;
+      color: var(--muted);
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .pain-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 50px;
+      margin-left: auto;
+    }
+    .pain-0 { background: rgba(164,176,190,.15); color: var(--muted); }
+    .pain-1 { background: rgba(107,196,154,.15); color: #6bc49a; }
+    .pain-2 { background: rgba(182,196,74,.15); color: #b6c44a; }
+    .pain-3 { background: rgba(240,160,64,.15); color: var(--accent3); }
+    .pain-4 { background: rgba(224,122,60,.15); color: #e07a3c; }
+    .pain-5 { background: rgba(224,92,92,.15); color: var(--accent2); }
+    .sick-badge { background: rgba(224,92,92,.12); color: var(--accent2); }
+
+    /* ── STATS ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 16px;
+    }
+    .stat-label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+    .stat-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .stat-sub {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* ── TIMELINE / PAIN AREA SUMMARY ── */
+    .area-row {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .area-name {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.9rem;
+      flex: 1;
+    }
+    .area-last {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .area-bar-wrap { width: 100%; height: 4px; background: var(--border); border-radius: 2px; margin-top: 6px; }
+    .area-bar { height: 4px; border-radius: 2px; background: var(--accent3); }
+
+    /* ── SETTINGS ── */
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .settings-label { font-size: 0.9rem; }
+    .settings-sub { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+    input[type=text], input[type=url] {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      padding: 8px 12px;
+      width: 100%;
+      outline: none;
+      margin-top: 8px;
+      transition: border-color .2s;
+    }
+    input[type=text]:focus, input[type=url]:focus { border-color: var(--accent); }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--accent);
+      color: #0b1218;
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      opacity: 0;
+      transition: all .3s;
+      pointer-events: none;
+      z-index: 100;
+      white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.error { background: var(--accent2); }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 72px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.65rem;
+      cursor: pointer;
+      padding: 8px 20px;
+      border-radius: 12px;
+      transition: all .15s;
+    }
+    .nav-item.active { color: var(--accent); }
+    .nav-item svg { width: 22px; height: 22px; }
+
+    /* ── FILTER BAR ── */
+    .filter-bar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .filter-bar::-webkit-scrollbar { display: none; }
+    .filter-chip {
+      padding: 6px 14px;
+      border-radius: 50px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.78rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all .15s;
+    }
+    .filter-chip.active { border-color: var(--accent); color: var(--accent); background: rgba(62,207,207,.08); }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    .empty-state .big { font-size: 2.5rem; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Helbred<span>Log</span></div>
+  <button id="sync-btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.71"/></svg>
+    Synkroniser
+  </button>
+</header>
+
+<nav>
+  <button class="active" data-tab="log">Log</button>
+  <button data-tab="history">Historik</button>
+  <button data-tab="stats">Oversigt</button>
+  <button data-tab="settings">Indstil.</button>
+</nav>
+
+<main>
+
+  <!-- ════════ LOG TAB ════════ -->
+  <div class="tab active" id="tab-log">
+
+    <!-- Type -->
+    <div class="section-title">Hvad logger du?</div>
+    <div class="type-toggle">
+      <button class="type-btn active-pain" data-type="pain" id="btn-pain">🤕 Smerter</button>
+      <button class="type-btn" data-type="sick" id="btn-sick">🤒 Sygdom</button>
+    </div>
+
+    <!-- PAIN SECTION -->
+    <div id="pain-section">
+      <div class="card">
+        <div class="card-title">
+          <div class="icon icon-amber">📍</div>
+          Hvor har du ondt?
+        </div>
+        <div class="body-parts" id="body-parts">
+          <button class="part-btn" data-part="Skulder">💪 Skulder</button>
+          <button class="part-btn" data-part="Nakke">🦒 Nakke</button>
+          <button class="part-btn" data-part="Ryg">🔙 Ryg</button>
+          <button class="part-btn" data-part="Knæ">🦵 Knæ</button>
+          <button class="part-btn" data-part="Hofte">🦴 Hofte</button>
+          <button class="part-btn" data-part="Albue">💡 Albue</button>
+          <button class="part-btn" data-part="Håndled">✋ Håndled</button>
+          <button class="part-btn" data-part="Ankel">🦶 Ankel</button>
+          <button class="part-btn" data-part="Hoved">🧠 Hoved</button>
+        </div>
+
+        <div class="pain-label">Smerteintensitet (0 = ingen · 5 = voldsomt)</div>
+        <div class="pain-scale" id="pain-scale">
+          <button class="pain-dot" data-v="0">0</button>
+          <button class="pain-dot" data-v="1">1</button>
+          <button class="pain-dot" data-v="2">2</button>
+          <button class="pain-dot" data-v="3">3</button>
+          <button class="pain-dot" data-v="4">4</button>
+          <button class="pain-dot" data-v="5">5</button>
+        </div>
+
+        <textarea id="pain-note" placeholder="Valgfri noter (f.eks. 'kom under træning', 'vågnet med det')…"></textarea>
+        <button class="save-btn" id="save-pain">GEM SMERTE-LOG</button>
+      </div>
+    </div>
+
+    <!-- SICK SECTION -->
+    <div id="sick-section" style="display:none">
+      <div class="card">
+        <div class="card-title">
+          <div class="icon icon-red">🤒</div>
+          Symptomer
+        </div>
+        <div class="sick-symptoms" id="sick-symptoms">
+          <button class="symptom-btn" data-s="Feber">🌡️ Feber</button>
+          <button class="symptom-btn" data-s="Hoste">😮‍💨 Hoste</button>
+          <button class="symptom-btn" data-s="Halsbetændelse">😮 Halsbetændelse</button>
+          <button class="symptom-btn" data-s="Snue">🤧 Snue</button>
+          <button class="symptom-btn" data-s="Træthed">😴 Træthed</button>
+          <button class="symptom-btn" data-s="Kvalme">🤢 Kvalme</button>
+          <button class="symptom-btn" data-s="Opkast">🤮 Opkast</button>
+          <button class="symptom-btn" data-s="Diarre">💩 Diarre</button>
+          <button class="symptom-btn" data-s="Hovedpine">🤯 Hovedpine</button>
+          <button class="symptom-btn" data-s="Muskelsmerter">💪 Muskelsmerter</button>
+        </div>
+
+        <div class="pain-label">Alvorlighedsgrad (0 = ingen · 5 = alvorlig)</div>
+        <div class="pain-scale" id="sick-scale">
+          <button class="pain-dot" data-v="0">0</button>
+          <button class="pain-dot" data-v="1">1</button>
+          <button class="pain-dot" data-v="2">2</button>
+          <button class="pain-dot" data-v="3">3</button>
+          <button class="pain-dot" data-v="4">4</button>
+          <button class="pain-dot" data-v="5">5</button>
+        </div>
+
+        <textarea id="sick-note" placeholder="Valgfri noter (f.eks. 'taget ibuprofen', 'hjemme fra arbejde')…"></textarea>
+        <button class="save-btn" id="save-sick">GEM SYGDOMS-LOG</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════════ HISTORY TAB ════════ -->
+  <div class="tab" id="tab-history">
+    <div class="filter-bar" id="filter-bar">
+      <button class="filter-chip active" data-f="all">Alle</button>
+      <button class="filter-chip" data-f="sick">Sygdom</button>
+      <button class="filter-chip" data-f="pain">Smerter</button>
+      <button class="filter-chip" data-f="Skulder">Skulder</button>
+      <button class="filter-chip" data-f="Nakke">Nakke</button>
+      <button class="filter-chip" data-f="Ryg">Ryg</button>
+      <button class="filter-chip" data-f="Knæ">Knæ</button>
+      <button class="filter-chip" data-f="Hofte">Hofte</button>
+    </div>
+    <div id="history-list"></div>
+  </div>
+
+  <!-- ════════ STATS TAB ════════ -->
+  <div class="tab" id="tab-stats">
+    <div class="section-title">Denne måned</div>
+    <div class="stats-grid" id="stats-grid"></div>
+
+    <div class="section-title">Smerteområder — sidst set</div>
+    <div id="areas-list"></div>
+  </div>
+
+  <!-- ════════ SETTINGS TAB ════════ -->
+  <div class="tab" id="tab-settings">
+    <div class="card">
+      <div class="card-title">
+        <div class="icon icon-teal">🔗</div>
+        Google Sheets integration
+      </div>
+
+      <div class="settings-row" style="flex-direction:column;align-items:flex-start">
+        <div>
+          <div class="settings-label">Apps Script URL</div>
+          <div class="settings-sub">Indsæt din Google Apps Script web app URL her</div>
+        </div>
+        <input type="url" id="sheet-url" placeholder="https://script.google.com/macros/s/…/exec" />
+      </div>
+
+      <div class="settings-row" style="flex-direction:column;align-items:flex-start;border:none">
+        <div>
+          <div class="settings-label">Hemmelig nøgle (valgfrit)</div>
+          <div class="settings-sub">Ekstra sikkerhed — skal matche din Apps Script</div>
+        </div>
+        <input type="password" id="secret-key" placeholder="f.eks. mit-hemmelige-token-123" />
+      </div>
+
+      <button class="save-btn" id="save-settings" style="background:var(--surface2);color:var(--accent);border:1.5px solid var(--accent);">GEM INDSTILLINGER</button>
+      <button class="save-btn" id="validate-access" style="background:var(--surface2);color:var(--accent3);border:1.5px solid var(--accent3);margin-top:10px;">VALIDER ADGANG TIL GOOGLE SHEET</button>
+      <div id="validate-status" style="display:none;margin-top:10px;padding:10px 14px;border-radius:8px;font-size:0.85rem;"></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-title">
+        <div class="icon icon-amber">📋</div>
+        Vejledning
+      </div>
+      <ol style="padding-left:18px;line-height:2;font-size:0.85rem;color:var(--muted)">
+        <li>Opret et nyt Google Sheet</li>
+        <li>Åbn <strong style="color:var(--text)">Udvidelser → Apps Script</strong></li>
+        <li>Indsæt koden fra <strong style="color:var(--text)">apps-script.js</strong></li>
+        <li>Deploy → <em style="color:var(--accent)">Ny implementering</em> → Webapp</li>
+        <li>Sæt adgang til <em style="color:var(--accent)">"Alle"</em> (kun du kender URL'en)</li>
+        <li>Kopiér URL og indsæt herover</li>
+        <li>Installér appen: Chrome menu → <em style="color:var(--accent)">Tilføj til startskærm</em></li>
+      </ol>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-title">
+        <div class="icon icon-red">🗑️</div>
+        Dataadministration
+      </div>
+      <button class="save-btn" id="clear-btn" style="background:transparent;color:var(--accent2);border:1.5px solid var(--accent2);">SLET ALLE LOKALE DATA</button>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-title">
+        <div class="icon icon-teal">📝</div>
+        Seneste ændringer
+      </div>
+      <ul style="list-style:none;padding:0;margin:0;font-size:0.85rem;color:var(--muted)">
+        <li style="padding:10px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:baseline">
+          <span style="color:var(--accent);font-weight:600;white-space:nowrap">13. apr.</span>
+          GitHub Pages-forhåndsvisning tilføjet ved hvert branch-push
+        </li>
+        <li style="padding:10px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:baseline">
+          <span style="color:var(--accent);font-weight:600;white-space:nowrap">13. apr.</span>
+          Hemmelig nøgle maskeres + valideringsknap til Google Sheet
+        </li>
+        <li style="padding:10px 0;display:flex;gap:10px;align-items:baseline">
+          <span style="color:var(--accent);font-weight:600;white-space:nowrap">11. apr.</span>
+          Tovejs-synkronisering med Google Sheets på tværs af enheder
+        </li>
+      </ul>
+    </div>
+  </div>
+
+</main>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let currentType = 'pain';
+let selectedParts = [];
+let selectedPain = null;
+let selectedSymptoms = [];
+let selectedSick = null;
+let currentFilter = 'all';
+
+const DB_KEY = 'healthlog_entries';
+const SET_KEY = 'healthlog_settings';
+const DEVICE_KEY = 'healthlog_device_id';
+
+function getDeviceId() {
+  let id = localStorage.getItem(DEVICE_KEY);
+  if (!id) {
+    const entropy = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+    id = 'dev-' + entropy;
+    localStorage.setItem(DEVICE_KEY, id);
+  }
+  return id;
+}
+
+function generateEntryId() {
+  return `${getDeviceId()}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function normalizeList(values) {
+  return (values || []).map(v => String(v).trim()).filter(Boolean).join(', ');
+}
+
+function fallbackEntryId(entry) {
+  const listField = entry.type === 'pain'
+    ? normalizeList(entry.parts || [])
+    : normalizeList(entry.symptoms || []);
+  return `${entry.type}:${entry.timestamp}:${listField}:${entry.intensity}:${entry.note || ''}`;
+}
+
+function normalizeEntry(entry) {
+  const normalized = { ...entry };
+  normalized.id = String(normalized.id || fallbackEntryId(normalized));
+  normalized.synced = normalized.synced === true;
+  return normalized;
+}
+
+function mergeEntries(localEntries, remoteEntries) {
+  const map = new Map();
+  [...localEntries, ...remoteEntries].forEach(raw => {
+    const entry = normalizeEntry(raw);
+    const existing = map.get(entry.id);
+    if (!existing) {
+      map.set(entry.id, entry);
+      return;
+    }
+    map.set(entry.id, { ...existing, ...entry, synced: existing.synced || entry.synced });
+  });
+  return Array.from(map.values()).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+}
+
+function entriesEqual(a, b) {
+  if (!a || !b) return false;
+  const aList = a.type === 'pain' ? normalizeList(a.parts || []) : normalizeList(a.symptoms || []);
+  const bList = b.type === 'pain' ? normalizeList(b.parts || []) : normalizeList(b.symptoms || []);
+  return (
+    a.id === b.id &&
+    a.type === b.type &&
+    a.timestamp === b.timestamp &&
+    a.intensity === b.intensity &&
+    (a.note || '') === (b.note || '') &&
+    a.synced === b.synced &&
+    aList === bList
+  );
+}
+
+function hasEntriesChanged(localEntries, mergedEntries) {
+  if (localEntries.length !== mergedEntries.length) return true;
+  const localMap = new Map(localEntries.map(e => [e.id, e]));
+  for (const merged of mergedEntries) {
+    const local = localMap.get(merged.id);
+    if (!entriesEqual(local, merged)) return true;
+  }
+  return false;
+}
+
+function getEntries() {
+  try {
+    const entries = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+    if (!Array.isArray(entries)) return [];
+    return entries.map(normalizeEntry);
+  } catch {
+    return [];
+  }
+}
+function saveEntries(arr) {
+  localStorage.setItem(DB_KEY, JSON.stringify(arr));
+}
+function getSettings() {
+  try { return JSON.parse(localStorage.getItem(SET_KEY) || '{}'); } catch { return {}; }
+}
+
+// ══════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════
+document.querySelectorAll('nav button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'history') renderHistory();
+    if (btn.dataset.tab === 'stats') renderStats();
+  });
+});
+
+// ══════════════════════════════════════════
+// TYPE TOGGLE
+// ══════════════════════════════════════════
+document.getElementById('btn-pain').addEventListener('click', () => switchType('pain'));
+document.getElementById('btn-sick').addEventListener('click', () => switchType('sick'));
+
+function switchType(t) {
+  currentType = t;
+  document.getElementById('btn-pain').className = 'type-btn' + (t==='pain' ? ' active-pain' : '');
+  document.getElementById('btn-sick').className = 'type-btn' + (t==='sick' ? ' active-sick' : '');
+  document.getElementById('pain-section').style.display = t === 'pain' ? '' : 'none';
+  document.getElementById('sick-section').style.display = t === 'sick' ? '' : 'none';
+}
+
+// ══════════════════════════════════════════
+// BODY PARTS
+// ══════════════════════════════════════════
+document.getElementById('body-parts').addEventListener('click', e => {
+  const btn = e.target.closest('.part-btn');
+  if (!btn) return;
+  const p = btn.dataset.part;
+  if (selectedParts.includes(p)) {
+    selectedParts = selectedParts.filter(x => x !== p);
+    btn.classList.remove('selected');
+  } else {
+    selectedParts.push(p);
+    btn.classList.add('selected');
+  }
+});
+
+// ══════════════════════════════════════════
+// PAIN SCALE
+// ══════════════════════════════════════════
+function bindScale(containerId, setter) {
+  document.getElementById(containerId).addEventListener('click', e => {
+    const btn = e.target.closest('.pain-dot');
+    if (!btn) return;
+    setter(+btn.dataset.v);
+    document.querySelectorAll(`#${containerId} .pain-dot`).forEach(b => {
+      b.classList.toggle('sel', +b.dataset.v === +btn.dataset.v);
+    });
+  });
+}
+bindScale('pain-scale', v => selectedPain = v);
+bindScale('sick-scale', v => selectedSick = v);
+
+// ══════════════════════════════════════════
+// SYMPTOMS
+// ══════════════════════════════════════════
+document.getElementById('sick-symptoms').addEventListener('click', e => {
+  const btn = e.target.closest('.symptom-btn');
+  if (!btn) return;
+  const s = btn.dataset.s;
+  if (selectedSymptoms.includes(s)) {
+    selectedSymptoms = selectedSymptoms.filter(x => x !== s);
+    btn.classList.remove('selected');
+  } else {
+    selectedSymptoms.push(s);
+    btn.classList.add('selected');
+  }
+});
+
+// ══════════════════════════════════════════
+// SAVE PAIN
+// ══════════════════════════════════════════
+document.getElementById('save-pain').addEventListener('click', () => {
+  if (!selectedParts.length) return toast('Vælg mindst ét smerteområde', true);
+  if (selectedPain === null) return toast('Vælg en smerteintensitet', true);
+
+  const entry = {
+    id: generateEntryId(),
+    type: 'pain',
+    timestamp: new Date().toISOString(),
+    parts: [...selectedParts],
+    intensity: selectedPain,
+    note: document.getElementById('pain-note').value.trim(),
+    synced: false
+  };
+
+  const entries = getEntries();
+  entries.unshift(entry);
+  saveEntries(entries);
+
+  toast('✓ Smerte logget');
+  resetPainForm();
+  trySync([entry]);
+});
+
+// ══════════════════════════════════════════
+// SAVE SICK
+// ══════════════════════════════════════════
+document.getElementById('save-sick').addEventListener('click', () => {
+  if (!selectedSymptoms.length) return toast('Vælg mindst ét symptom', true);
+  if (selectedSick === null) return toast('Vælg en alvorlighedsgrad', true);
+
+  const entry = {
+    id: generateEntryId(),
+    type: 'sick',
+    timestamp: new Date().toISOString(),
+    symptoms: [...selectedSymptoms],
+    intensity: selectedSick,
+    note: document.getElementById('sick-note').value.trim(),
+    synced: false
+  };
+
+  const entries = getEntries();
+  entries.unshift(entry);
+  saveEntries(entries);
+
+  toast('✓ Sygdom logget');
+  resetSickForm();
+  trySync([entry]);
+});
+
+function resetPainForm() {
+  selectedParts = [];
+  selectedPain = null;
+  document.querySelectorAll('.part-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('#pain-scale .pain-dot').forEach(b => b.classList.remove('sel'));
+  document.getElementById('pain-note').value = '';
+}
+function resetSickForm() {
+  selectedSymptoms = [];
+  selectedSick = null;
+  document.querySelectorAll('.symptom-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('#sick-scale .pain-dot').forEach(b => b.classList.remove('sel'));
+  document.getElementById('sick-note').value = '';
+}
+
+// ══════════════════════════════════════════
+// HISTORY
+// ══════════════════════════════════════════
+document.getElementById('filter-bar').addEventListener('click', e => {
+  const chip = e.target.closest('.filter-chip');
+  if (!chip) return;
+  currentFilter = chip.dataset.f;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c === chip));
+  renderHistory();
+});
+
+function renderHistory() {
+  const entries = getEntries();
+  const list = document.getElementById('history-list');
+
+  const filtered = entries.filter(e => {
+    if (currentFilter === 'all') return true;
+    if (currentFilter === 'sick') return e.type === 'sick';
+    if (currentFilter === 'pain') return e.type === 'pain';
+    return e.type === 'pain' && e.parts && e.parts.includes(currentFilter);
+  });
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-state"><div class="big">📭</div>Ingen logs endnu.<br>Brug Log-fanen til at starte.</div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(e => {
+    const d = new Date(e.timestamp);
+    const dateStr = d.toLocaleDateString('da-DK', { day:'numeric', month:'short', year:'numeric' });
+    const timeStr = d.toLocaleTimeString('da-DK', { hour:'2-digit', minute:'2-digit' });
+
+    if (e.type === 'pain') {
+      return `<div class="history-item">
+        <div class="history-icon icon-amber" style="background:rgba(240,160,64,.12)">📍</div>
+        <div class="history-body">
+          <div class="history-title" style="display:flex;align-items:center;justify-content:space-between">
+            ${e.parts.join(', ')}
+            <span class="pain-badge pain-${e.intensity}">● ${e.intensity}/5</span>
+          </div>
+          <div class="history-meta">
+            <span>📅 ${dateStr}</span>
+            <span>🕐 ${timeStr}</span>
+            ${e.note ? `<span style="color:var(--text);opacity:.7">💬 ${e.note}</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+    } else {
+      return `<div class="history-item">
+        <div class="history-icon icon-red" style="background:rgba(224,92,92,.12)">🤒</div>
+        <div class="history-body">
+          <div class="history-title" style="display:flex;align-items:center;justify-content:space-between">
+            ${e.symptoms.join(', ')}
+            <span class="pain-badge sick-badge">● ${e.intensity}/5</span>
+          </div>
+          <div class="history-meta">
+            <span>📅 ${dateStr}</span>
+            <span>🕐 ${timeStr}</span>
+            ${e.note ? `<span style="color:var(--text);opacity:.7">💬 ${e.note}</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// STATS
+// ══════════════════════════════════════════
+function renderStats() {
+  const entries = getEntries();
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const thisMonth = entries.filter(e => new Date(e.timestamp) >= monthStart);
+
+  const painEntries = entries.filter(e => e.type === 'pain');
+  const sickEntries = entries.filter(e => e.type === 'sick');
+  const avgIntensity = painEntries.length
+    ? (painEntries.reduce((s, e) => s + e.intensity, 0) / painEntries.length).toFixed(1)
+    : '–';
+
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Smerte-logs</div>
+      <div class="stat-value">${thisMonth.filter(e=>e.type==='pain').length}</div>
+      <div class="stat-sub">denne måned</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Sygdomsperioder</div>
+      <div class="stat-value" style="color:var(--accent2)">${thisMonth.filter(e=>e.type==='sick').length}</div>
+      <div class="stat-sub">denne måned</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Gns. intensitet</div>
+      <div class="stat-value" style="color:var(--accent3)">${avgIntensity}</div>
+      <div class="stat-sub">alle smerterlogs</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total logs</div>
+      <div class="stat-value" style="color:var(--muted)">${entries.length}</div>
+      <div class="stat-sub">siden start</div>
+    </div>
+  `;
+
+  // Pain areas summary
+  const areaMap = {};
+  painEntries.forEach(e => {
+    (e.parts || []).forEach(p => {
+      if (!areaMap[p]) areaMap[p] = { count: 0, last: null, sumI: 0 };
+      areaMap[p].count++;
+      areaMap[p].sumI += e.intensity;
+      if (!areaMap[p].last || new Date(e.timestamp) > new Date(areaMap[p].last)) {
+        areaMap[p].last = e.timestamp;
+      }
+    });
+  });
+
+  const sorted = Object.entries(areaMap).sort((a,b) => new Date(b[1].last) - new Date(a[1].last));
+
+  if (!sorted.length) {
+    document.getElementById('areas-list').innerHTML = `<div class="empty-state"><div class="big">📊</div>Ingen smerte-data endnu.</div>`;
+    return;
+  }
+
+  document.getElementById('areas-list').innerHTML = sorted.map(([name, data]) => {
+    const lastD = new Date(data.last);
+    const daysAgo = Math.floor((now - lastD) / 86400000);
+    const daysStr = daysAgo === 0 ? 'I dag' : daysAgo === 1 ? 'I går' : `${daysAgo} dage siden`;
+    const avgI = (data.sumI / data.count).toFixed(1);
+    const barW = Math.round((data.sumI / data.count) / 5 * 100);
+    return `<div class="area-row">
+      <div style="flex:1">
+        <div class="area-name">${name}</div>
+        <div class="history-meta"><span>Sidst: ${daysStr}</span><span>${data.count} log${data.count>1?'s':''}</span></div>
+        <div class="area-bar-wrap"><div class="area-bar" style="width:${barW}%"></div></div>
+      </div>
+      <div style="text-align:right">
+        <div class="pain-badge pain-${Math.round(avgI)}" style="margin-left:0">⌀ ${avgI}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════
+function loadSettings() {
+  const s = getSettings();
+  if (s.sheetUrl) document.getElementById('sheet-url').value = s.sheetUrl;
+  if (s.secretKey) document.getElementById('secret-key').value = s.secretKey;
+}
+document.getElementById('save-settings').addEventListener('click', () => {
+  const s = {
+    sheetUrl: document.getElementById('sheet-url').value.trim(),
+    secretKey: document.getElementById('secret-key').value.trim()
+  };
+  localStorage.setItem(SET_KEY, JSON.stringify(s));
+  toast('✓ Indstillinger gemt');
+});
+
+document.getElementById('validate-access').addEventListener('click', async () => {
+  const btn = document.getElementById('validate-access');
+  const statusEl = document.getElementById('validate-status');
+  const s = getSettings();
+
+  if (!s.sheetUrl) {
+    statusEl.style.display = 'block';
+    statusEl.style.background = 'rgba(224,92,92,0.15)';
+    statusEl.style.border = '1px solid var(--accent2)';
+    statusEl.style.color = 'var(--accent2)';
+    statusEl.textContent = '⚠ Ingen Apps Script URL er angivet. Gem dine indstillinger først.';
+    return;
+  }
+
+  btn.textContent = 'VALIDERER…';
+  btn.disabled = true;
+  statusEl.style.display = 'none';
+
+  try {
+    let url;
+    try { url = new URL(s.sheetUrl); } catch { throw new Error('Ugyldig URL-format — tjek at adressen er korrekt.'); }
+    url.searchParams.set('action', 'list');
+    if (s.secretKey) url.searchParams.set('secret', s.secretKey);
+
+    const res = await fetch(url.toString());
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    if (data && data.status === 'ok') {
+      statusEl.style.display = 'block';
+      statusEl.style.background = 'rgba(62,207,207,0.1)';
+      statusEl.style.border = '1px solid var(--accent)';
+      statusEl.style.color = 'var(--accent)';
+      statusEl.textContent = '✓ Forbindelsen til Google Sheet fungerer korrekt.';
+    } else {
+      throw new Error('Uventet svar fra script');
+    }
+  } catch (err) {
+    statusEl.style.display = 'block';
+    statusEl.style.background = 'rgba(224,92,92,0.15)';
+    statusEl.style.border = '1px solid var(--accent2)';
+    statusEl.style.color = 'var(--accent2)';
+    statusEl.textContent = `✗ Ingen adgang: ${err.message}. Tjek at URL og hemmelig nøgle er korrekte, og at scriptet er deployed korrekt.`;
+  } finally {
+    btn.textContent = 'VALIDER ADGANG TIL GOOGLE SHEET';
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('clear-btn').addEventListener('click', () => {
+  if (confirm('Er du sikker? Alle lokale data slettes permanent.')) {
+    localStorage.removeItem(DB_KEY);
+    toast('Data slettet');
+  }
+});
+
+// ══════════════════════════════════════════
+// SYNC TO GOOGLE SHEETS
+// ══════════════════════════════════════════
+async function trySync(newEntries) {
+  const s = getSettings();
+  if (!s.sheetUrl) return;
+  try {
+    for (const entry of newEntries) {
+      const payload = {
+        secret: s.secretKey || '',
+        timestamp: entry.timestamp,
+        entryId: entry.id,
+        type: entry.type,
+        location: entry.type === 'pain' ? entry.parts.join(', ') : '',
+        symptoms: entry.type === 'sick' ? entry.symptoms.join(', ') : '',
+        intensity: entry.intensity,
+        note: entry.note || ''
+      };
+      await fetch(s.sheetUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      // Mark synced
+      const entries = getEntries();
+      const idx = entries.findIndex(e => e.id === entry.id);
+      if (idx !== -1) { entries[idx].synced = true; saveEntries(entries); }
+    }
+  } catch (err) {
+    console.warn('Sync fejlede:', err);
+  }
+}
+
+async function pullFromSheet() {
+  const s = getSettings();
+  if (!s.sheetUrl) return 0;
+  try {
+    const url = new URL(s.sheetUrl);
+    url.searchParams.set('action', 'list');
+    if (s.secretKey) url.searchParams.set('secret', s.secretKey);
+
+    const res = await fetch(url.toString());
+    if (!res.ok) throw new Error('Kunne ikke hente data fra arket');
+    const payload = await res.json();
+    if (!payload || payload.status !== 'ok' || !Array.isArray(payload.entries)) return 0;
+
+    const localEntries = getEntries();
+    const mergedEntries = mergeEntries(localEntries, payload.entries.map(e => ({ ...e, synced: true })));
+    const localIds = new Set(localEntries.map(e => e.id));
+    const added = mergedEntries.filter(e => !localIds.has(e.id)).length;
+    if (hasEntriesChanged(localEntries, mergedEntries)) {
+      saveEntries(mergedEntries);
+    }
+
+    return added;
+  } catch (err) {
+    console.warn('Læsning fra ark fejlede:', err);
+    return 0;
+  }
+}
+
+document.getElementById('sync-btn').addEventListener('click', async () => {
+  const syncBtn = document.getElementById('sync-btn');
+  const unsynced = getEntries().filter(e => !e.synced);
+  syncBtn.textContent = '↻ Synkroniserer…';
+  await trySync(unsynced);
+  const pulledCount = await pullFromSheet();
+  syncBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.71"/></svg> Synkroniser`;
+  if (!unsynced.length && pulledCount === 0) {
+    toast('Intet nyt at synkronisere');
+  } else if (pulledCount > 0) {
+    toast(`✓ Synkroniseret (${pulledCount} nye fra arket)`);
+  } else {
+    toast('✓ Synkroniseret');
+  }
+  renderHistory();
+  renderStats();
+});
+
+// ══════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════
+function toast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show' + (isError ? ' error' : '');
+  setTimeout(() => t.className = '', 2500);
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+loadSettings();
+pullFromSheet().then(added => {
+  if (added > 0) {
+    renderHistory();
+    renderStats();
+  }
+});
+
+// Service Worker registration
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
