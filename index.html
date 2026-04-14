@@ -218,12 +218,18 @@
       transition: all .15s;
       display: flex; align-items: center; justify-content: center;
     }
-    .pain-dot[data-v="0"].sel { border-color: var(--muted); background: rgba(164,176,190,.2); color: var(--muted); }
-    .pain-dot[data-v="1"].sel { border-color: #6bc49a; background: rgba(107,196,154,.2); color: #6bc49a; }
-    .pain-dot[data-v="2"].sel { border-color: #b6c44a; background: rgba(182,196,74,.2); color: #b6c44a; }
-    .pain-dot[data-v="3"].sel { border-color: var(--accent3); background: rgba(240,160,64,.2); color: var(--accent3); }
-    .pain-dot[data-v="4"].sel { border-color: #e07a3c; background: rgba(224,122,60,.2); color: #e07a3c; }
-    .pain-dot[data-v="5"].sel { border-color: var(--accent2); background: rgba(224,92,92,.2); color: var(--accent2); }
+    .pain-dot[data-v="0"] { border-color: var(--muted); color: var(--muted); }
+    .pain-dot[data-v="1"] { border-color: #6bc49a; color: #6bc49a; }
+    .pain-dot[data-v="2"] { border-color: #b6c44a; color: #b6c44a; }
+    .pain-dot[data-v="3"] { border-color: var(--accent3); color: var(--accent3); }
+    .pain-dot[data-v="4"] { border-color: #e07a3c; color: #e07a3c; }
+    .pain-dot[data-v="5"] { border-color: var(--accent2); color: var(--accent2); }
+    .pain-dot[data-v="0"].sel { background: rgba(164,176,190,.2); }
+    .pain-dot[data-v="1"].sel { background: rgba(107,196,154,.2); }
+    .pain-dot[data-v="2"].sel { background: rgba(182,196,74,.2); }
+    .pain-dot[data-v="3"].sel { background: rgba(240,160,64,.2); }
+    .pain-dot[data-v="4"].sel { background: rgba(224,122,60,.2); }
+    .pain-dot[data-v="5"].sel { background: rgba(224,92,92,.2); }
 
     /* ── NOTE INPUT ── */
     textarea {
