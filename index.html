@@ -347,6 +347,46 @@
     .pain-5 { background: rgba(224,92,92,.15); color: var(--accent2); }
     .sick-badge { background: rgba(224,92,92,.12); color: var(--accent2); }
 
+    /* ── SWIPE DELETE ── */
+    .swipe-wrapper {
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--r);
+      margin-bottom: 10px;
+    }
+    .swipe-wrapper .history-item {
+      position: relative;
+      z-index: 1;
+      margin-bottom: 0;
+      transition: transform 0.2s ease;
+      border-radius: var(--r);
+    }
+    .delete-action {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 80px;
+      background: var(--accent2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 0;
+      border-radius: 0 var(--r) var(--r) 0;
+    }
+    .delete-btn {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 22px;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     /* ── STATS ── */
     .stats-grid {
       display: grid;
@@ -995,40 +1035,134 @@ function renderHistory() {
     const d = new Date(e.timestamp);
     const dateStr = d.toLocaleDateString('da-DK', { day:'numeric', month:'short', year:'numeric' });
     const timeStr = d.toLocaleTimeString('da-DK', { hour:'2-digit', minute:'2-digit' });
+    const safeId = htmlAttr(e.id);
 
     if (e.type === 'pain') {
-      return `<div class="history-item">
-        <div class="history-icon icon-amber" style="background:rgba(240,160,64,.12)">📍</div>
-        <div class="history-body">
-          <div class="history-title" style="display:flex;align-items:center;justify-content:space-between">
-            ${e.parts.join(', ')}
-            <span class="pain-badge pain-${e.intensity}">● ${e.intensity}/5</span>
-          </div>
-          <div class="history-meta">
-            <span>📅 ${dateStr}</span>
-            <span>🕐 ${timeStr}</span>
-            ${e.note ? `<span style="color:var(--text);opacity:.7">💬 ${e.note}</span>` : ''}
+      return `<div class="swipe-wrapper" data-id="${safeId}">
+        <div class="delete-action"><button class="delete-btn" aria-label="Slet">🗑️</button></div>
+        <div class="history-item">
+          <div class="history-icon icon-amber" style="background:rgba(240,160,64,.12)">📍</div>
+          <div class="history-body">
+            <div class="history-title" style="display:flex;align-items:center;justify-content:space-between">
+              ${e.parts.join(', ')}
+              <span class="pain-badge pain-${e.intensity}">● ${e.intensity}/5</span>
+            </div>
+            <div class="history-meta">
+              <span>📅 ${dateStr}</span>
+              <span>🕐 ${timeStr}</span>
+              ${e.note ? `<span style="color:var(--text);opacity:.7">💬 ${e.note}</span>` : ''}
+            </div>
           </div>
         </div>
       </div>`;
     } else {
-      return `<div class="history-item">
-        <div class="history-icon icon-red" style="background:rgba(224,92,92,.12)">🤒</div>
-        <div class="history-body">
-          <div class="history-title" style="display:flex;align-items:center;justify-content:space-between">
-            ${e.symptoms.join(', ')}
-            <span class="pain-badge sick-badge">● ${e.intensity}/5</span>
-          </div>
-          <div class="history-meta">
-            <span>📅 ${dateStr}</span>
-            <span>🕐 ${timeStr}</span>
-            ${e.note ? `<span style="color:var(--text);opacity:.7">💬 ${e.note}</span>` : ''}
+      return `<div class="swipe-wrapper" data-id="${safeId}">
+        <div class="delete-action"><button class="delete-btn" aria-label="Slet">🗑️</button></div>
+        <div class="history-item">
+          <div class="history-icon icon-red" style="background:rgba(224,92,92,.12)">🤒</div>
+          <div class="history-body">
+            <div class="history-title" style="display:flex;align-items:center;justify-content:space-between">
+              ${e.symptoms.join(', ')}
+              <span class="pain-badge sick-badge">● ${e.intensity}/5</span>
+            </div>
+            <div class="history-meta">
+              <span>📅 ${dateStr}</span>
+              <span>🕐 ${timeStr}</span>
+              ${e.note ? `<span style="color:var(--text);opacity:.7">💬 ${e.note}</span>` : ''}
+            </div>
           </div>
         </div>
       </div>`;
     }
   }).join('');
 }
+
+// ══════════════════════════════════════════
+// DELETE ENTRY
+// ══════════════════════════════════════════
+function htmlAttr(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function deleteEntry(id) {
+  const entries = getEntries().filter(e => e.id !== id);
+  saveEntries(entries);
+  tryDeleteFromSheet(id);
+  renderHistory();
+  renderStats();
+  toast('Post slettet');
+}
+
+async function tryDeleteFromSheet(entryId) {
+  const s = getSettings();
+  if (!s.sheetUrl) return;
+  try {
+    const payload = {
+      action: 'delete',
+      secret: s.secretKey || '',
+      entryId: entryId
+    };
+    await fetch(s.sheetUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch (err) {
+    console.warn('Sletning fra ark fejlede:', err);
+  }
+}
+
+// ── Swipe-to-delete touch handling ──
+(function () {
+  let _item = null, _startX = 0, _startY = 0, _dir = null;
+  const list = document.getElementById('history-list');
+
+  list.addEventListener('touchstart', e => {
+    const wrapper = e.target.closest('.swipe-wrapper');
+    if (!wrapper) return;
+    _item = wrapper.querySelector('.history-item');
+    _startX = e.touches[0].clientX;
+    _startY = e.touches[0].clientY;
+    _dir = null;
+  }, { passive: true });
+
+  list.addEventListener('touchmove', e => {
+    if (!_item) return;
+    const dx = e.touches[0].clientX - _startX;
+    const dy = e.touches[0].clientY - _startY;
+    if (!_dir) {
+      _dir = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+    }
+    if (_dir !== 'h') return;
+    e.preventDefault();
+    const clamped = Math.max(-80, Math.min(0, dx));
+    _item.style.transition = 'none';
+    _item.style.transform = `translateX(${clamped}px)`;
+  }, { passive: false });
+
+  list.addEventListener('touchend', e => {
+    if (!_item) return;
+    const swipeDist = _startX - e.changedTouches[0].clientX;
+    _item.style.transition = 'transform 0.2s ease';
+    _item.style.transform = swipeDist > 50 ? 'translateX(-80px)' : '';
+    _item = null;
+    _dir = null;
+  });
+
+  list.addEventListener('click', e => {
+    if (e.target.closest('.delete-btn')) {
+      const wrapper = e.target.closest('.swipe-wrapper');
+      if (wrapper) deleteEntry(wrapper.dataset.id);
+      return;
+    }
+    // Close any open swipe rows when tapping elsewhere
+    list.querySelectorAll('.swipe-wrapper .history-item').forEach(item => {
+      item.style.transition = 'transform 0.2s ease';
+      item.style.transform = '';
+    });
+  });
+}());
 
 // ══════════════════════════════════════════
 // STATS

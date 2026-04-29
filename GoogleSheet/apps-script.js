@@ -29,6 +29,27 @@ function doPost(e) {
     }
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // ── DELETE ACTION ──
+    if (data.action === 'delete') {
+      const entryId = data.entryId;
+      if (!entryId) throw new Error('entryId mangler');
+      [SHEET_NAME_PAIN, SHEET_NAME_SICK].forEach(function(name) {
+        const sheet = ss.getSheetByName(name);
+        if (!sheet || sheet.getLastRow() < 2) return;
+        const ids = sheet.getRange(2, 7, sheet.getLastRow() - 1, 1).getValues();
+        for (let i = ids.length - 1; i >= 0; i--) {
+          if (String(ids[i][0]) === String(entryId)) {
+            sheet.deleteRow(i + 2);
+            break;
+          }
+        }
+      });
+      return ContentService
+        .createTextOutput(JSON.stringify({ status: 'ok' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     const timestamp = new Date(data.timestamp);
     const formattedDate = Utilities.formatDate(timestamp, Session.getScriptTimeZone(), 'dd-MM-yyyy');
     const formattedTime = Utilities.formatDate(timestamp, Session.getScriptTimeZone(), 'HH:mm');
