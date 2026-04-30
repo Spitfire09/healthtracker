@@ -1,4 +1,4 @@
-const CACHE = 'healthlog-v2';
+const CACHE = 'healthlog-8bb86d8';
 const ASSETS = [
   './',
   './index.html',
