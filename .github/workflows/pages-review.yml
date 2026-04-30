@@ -30,6 +30,12 @@ jobs:
           echo "deploy_dir=$DEPLOY_DIR" >> "$GITHUB_OUTPUT"
           echo "Branch: $BRANCH -> deploy dir: $DEPLOY_DIR"
 
+      - name: Update cache version in sw.js
+        run: |
+          SHORT_SHA=$(echo "$GITHUB_SHA" | cut -c1-7)
+          sed -i "s/const CACHE = 'healthlog-[^']*'/const CACHE = 'healthlog-${SHORT_SHA}'/" sw.js
+          echo "Cache version set to: healthlog-${SHORT_SHA}"
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
